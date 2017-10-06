@@ -64,8 +64,39 @@ function RecognizerStart(SDK, recognizer, file) {
               console.log(JSON.stringify(event.Result)); 
               break;
           case "SpeechSimplePhraseEvent" :
-              UpdateStatus(file, event.Name, "SpeechSimplePhraseEvent");
-              UpdateStatus(file, event.Name, JSON.stringify(event.Result, null, 3));
+              //UpdateStatus(file, event.Name, "SpeechSimplePhraseEvent");
+              //UpdateStatus(file, event.Name, JSON.stringify(event.Result.DisplayText, null, 3));
+
+              var documents = 
+              { 
+                documents: [
+                 { 
+                   id: '1', 
+                   language: 'es', 
+                   text: event.Result.DisplayText
+                 },
+               ]
+              };
+
+              var settings = {
+                "async": true,
+                "crossDomain": true,
+                "url": "https://westcentralus.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment",
+                "method": "POST",
+                "headers": {
+                  "ocp-apim-subscription-key": "9c0bc0190edf451fa24029d7c2419210",
+                  "content-type": "application/json",
+                  "cache-control": "no-cache",
+                  "postman-token": "168d5d45-71a0-7e2c-59fa-6025967c1e55"
+                },
+                "data": JSON.stringify(documents)
+              }
+              
+              $.ajax(settings).done(function (response) {
+                console.log(event.Result.DisplayText);
+                console.log(response.documents[0].score);
+              });
+              
               break;
           case "SpeechDetailedPhraseEvent" :
               UpdateStatus(file, event.Name, "SpeechDetailedPhraseEvent");
@@ -88,7 +119,7 @@ function RecognizerStart(SDK, recognizer, file) {
 }
 
 function UpdateStatus(file, event, text) {
-  console.log(file.name + ' >>> ' + event + ' >>> \n' + text);
+  //console.log(file.name + ' >>> ' + event + ' >>> \n' + text);
 }
 
 function UpdateRecognizedHypothesis(text) {
@@ -101,5 +132,5 @@ function OnSpeechEndDetected(file) {
 }
 
 function OnComplete() {
-  
+  console.log("Complete !");
 }
