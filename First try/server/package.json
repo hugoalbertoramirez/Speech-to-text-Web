@@ -1,0 +1,37 @@
+{
+  "name": "simple-video-chat",
+  "version": "0.1.0",
+  "description": "Implement a speech to text from wav files",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hugoalbertoramirez"
+  },
+  "keywords": [
+    "SpeechToText",
+    "Audio",
+    "JavaScript",
+    "HTML"
+  ],
+  "author": "Hugo Ramirez",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/??"
+  },
+  "homepage": "https://github.com/??",
+  "dependencies": {
+    "express": "^4.14.0",
+    "fs": "0.0.1-security",
+    "ws": "^1.1.1",
+    "express-fileupload": "^0.1.4",
+    "node-oxford-emotion": "1.0.4",
+    "formidable": "1.0.0",
+    "path": "0.12.7",
+    "microsoft-speech-browser-sdk" : "0.0.4",
+    "requirejs": "2.3.5"
+  }
+}
+
