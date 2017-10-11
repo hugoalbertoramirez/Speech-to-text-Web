@@ -4,6 +4,12 @@ var TextAnalysisKey = "9c0bc0190edf451fa24029d7c2419210";
 var nFiles = 0;
 var keyPhrasesJSON = {};
 var opinionsJSON = {};
+var irrelevantWords = [
+'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'lo', 'al', 'del', 
+'yo', 'tu', 'el', 'nosotros', 'nosotras', 'ustedes', 'ellos', 'ellas',
+'a', 'ante', 'bajo', 'cabe', 'con', 'contra', 'de', 'desde', 'durante', 'en', 'entre', 'este', 'hacia', 'hasta', 'mediante', 'para', 'por', 
+'segun', 'sin', 'so', 'sobre', 'tras', 'versus',  'via', 'y', 'o',
+];
 
 $('.upload-btn').on('click', function (){
     $('#upload-input').click();
@@ -55,7 +61,7 @@ function RecognizerStart(SDK, recognizer, fileName, index) {
       if (index == nFiles - 1)
       {
         console.log("============= keyPhrasesJSON =============");
-        console.log(JSON.stringify(keyPhrasesJSON));
+        console.log(JSON.stringify(fixPhrases(keyPhrasesJSON)));
         // for(key in keyPhrasesJSON){
         //   var value = keyPhrasesJSON[key];
         //   console.log(key + ": " + value)
@@ -128,17 +134,88 @@ function GetKeyPhrases(documents)
     if (response.documents && response.documents[0] && response.documents[0].keyPhrases)
     {
       var keyPhrases = response.documents[0].keyPhrases;
+      var key;
       for (var i = 0; i < keyPhrases.length; i++)
       {
-        if (keyPhrasesJSON[keyPhrases[i]])
+        key = keyPhrases[i];
+        if (keyPhrasesJSON[key])
         {
-          keyPhrasesJSON[keyPhrases[i]] = keyPhrasesJSON[keyPhrases[i]] + 1;
+          keyPhrasesJSON[key] = keyPhrasesJSON[key] + 1;
         }
         else
         {
-          keyPhrasesJSON[keyPhrases[i]] = 1;
+          keyPhrasesJSON[key] = 1;
         }
       }
     }
   });
+}
+
+function fixPhrases(keyPhrasesJSON, limit = 20)
+{
+  var noCapitals = {};
+  var found = false;
+
+  // remove if it has capital letters:
+  for (key in keyPhrasesJSON)
+  {
+    found = false;
+
+    for (var j = 0; j < key.length && found == false; j++)
+    {
+      if (key[j] == key[j].toUpperCase())
+      {
+        found = true;
+      }
+    }
+
+    if (!found)
+    {
+      noCapitals[key] = keyPhrasesJSON[key];
+    }
+  }
+
+  var noIrrelevantWords = {};
+  found = false;
+
+  // remove is it is an irrelevant word:
+  for (key in noCapitals)
+  {
+    found = false;
+
+    for (var i = 0; i < irrelevantWords.length && found == false; i++)
+    {
+      if (irrelevantWords[i] == key.toLowerCase())
+      {
+        found = true;
+      }
+    }
+
+    if (!found)
+    {
+      noIrrelevantWords[key] = noCapitals[key];
+    }
+  }
+
+  var fixed = {};
+
+  // crear una lista con los 'values' de noIrrelevantWords
+  var items = Object.keys(noIrrelevantWords).map(function(key) 
+  { 
+    return [key, noIrrelevantWords[key]]; 
+  });
+
+  //ordenar los 'values' de mayor a menor
+  items.sort(function(first, second) 
+  { 
+    return second[1] - first[1]; 
+  });
+
+  // quedarse con los primeros limit valores de limit (20)
+  for (var i =  0; i < Math.max(limit, items.length); i++)
+  {
+    fixed[items[i][0]] = items[i][1];
+  }
+  
+  return fixed;
 }
