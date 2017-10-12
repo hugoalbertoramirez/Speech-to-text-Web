@@ -1,5 +1,6 @@
 var SpeechToTextKey = "9fc280924bed46b9ab0c3714ca3069ca";
 var TextAnalysisKey = "9c0bc0190edf451fa24029d7c2419210";
+var lang = "es";
 
 var nFiles = 0;
 var keyPhrasesJSON = {};
@@ -16,7 +17,6 @@ $('.upload-btn').on('click', function (){
     $('.progress-bar').text('0%');
     $('.progress-bar').width('0%');
 });
-
 $('#upload-input').on('change', function(){
 
   var files = $(this).get(0).files;
@@ -45,34 +45,49 @@ $('#upload-input').on('change', function(){
   }
 });
 
+var frags = 0;
+var documents = { documents: [] };
+
 function RecognizerStart(SDK, recognizer, fileName, index) {
   recognizer.Recognize((event) => {
+    
     if (event.Name == "SpeechSimplePhraseEvent")
     {
       console.log(event.Result.DisplayText);
-      
-      var documents = { documents: [ { id: '1', language: 'es', text: event.Result.DisplayText},] };
+     
+      frags += 1;
+      if(frags < 10)
+      {
+        var document = { id: frags, language: lang, text: event.Result.DisplayText};
+        documents.documents.push(document);
+      }
+      else
+      {
+        GetScore(documents, fileName);
+        GetKeyPhrases(documents);
 
-      GetScore(documents, fileName);
-      GetKeyPhrases(documents);
+        frags = 0;
+        documents = { documents: [] };
+      }
     }   
     else if (event.Name == "RecognitionEndedEvent")
     {
+      if(documents.documents.length > 0)
+      {
+        GetScore(documents, fileName);
+        GetKeyPhrases(documents);
+
+        frags = 0;
+        documents = { documents: [] };
+      }
+
       if (index == nFiles - 1)
       {
-        console.log("============= keyPhrasesJSON =============");
-        console.log(JSON.stringify(fixPhrases(keyPhrasesJSON)));
-        // for(key in keyPhrasesJSON){
-        //   var value = keyPhrasesJSON[key];
-        //   console.log(key + ": " + value)
-        // }
-
         console.log("============= opinionsJSON =============");
         console.log(JSON.stringify(opinionsJSON));
-        // for(key in opinionsJSON){
-        //   var value = opinionsJSON[key];
-        //   console.log(key + ": " + value)
-        // }
+
+        console.log("============= keyPhrasesJSON =============");
+        console.log(JSON.stringify(fixPhrases(keyPhrasesJSON)));
       }
     }
   })
@@ -97,19 +112,26 @@ function GetScore(documents, fileName)
     "data": JSON.stringify(documents)
   }
   
-  $.ajax(settings).done(function (response) {
-    if (response.documents && response.documents[0] && response.documents[0].score)
+  $.ajax(settings).done(function (response) 
+  {
+    if (response.documents)
     {
-      var score = response.documents[0].score;
-      
-      if (opinionsJSON[fileName])
+      for (var i = 0; i < response.documents.length; i++)
       {
-        var arr = opinionsJSON[fileName];
-        arr.push(score);
-      }
-      else
-      {
-        opinionsJSON[fileName] = [score];
+        if (response.documents[i].score)
+        {
+          var score = response.documents[i].score;
+          
+          if (opinionsJSON[fileName])
+          {
+            var arr = opinionsJSON[fileName];
+            arr.push(score);
+          }
+          else
+          {
+            opinionsJSON[fileName] = [score];
+          }
+        }
       }
     }
   });
@@ -131,33 +153,41 @@ function GetKeyPhrases(documents)
   }
 
   $.ajax(settings).done(function (response) {
-    if (response.documents && response.documents[0] && response.documents[0].keyPhrases)
+    if (response.documents)
     {
-      var keyPhrases = response.documents[0].keyPhrases;
+      var keyPhrases;
       var key;
-      for (var i = 0; i < keyPhrases.length; i++)
+      for (var i = 0; i < response.documents.length; i++)
       {
-        key = keyPhrases[i];
-        if (keyPhrasesJSON[key])
+        if (response.documents[i].keyPhrases)
         {
-          keyPhrasesJSON[key] = keyPhrasesJSON[key] + 1;
-        }
-        else
-        {
-          keyPhrasesJSON[key] = 1;
+          keyPhrases = response.documents[i].keyPhrases;
+          
+          for (var j = 0; j < keyPhrases.length; j++)
+          {
+            key = keyPhrases[j];
+            if (keyPhrasesJSON[key])
+            {
+              keyPhrasesJSON[key] = keyPhrasesJSON[key] + 1;
+            }
+            else
+            {
+              keyPhrasesJSON[key] = 1;
+            }
+          }
         }
       }
     }
   });
 }
 
-function fixPhrases(keyPhrasesJSON, limit = 20)
+function fixPhrases(json, limit = 20)
 {
   var noCapitals = {};
   var found = false;
 
   // remove if it has capital letters:
-  for (key in keyPhrasesJSON)
+  for (key in json)
   {
     found = false;
 
@@ -171,7 +201,7 @@ function fixPhrases(keyPhrasesJSON, limit = 20)
 
     if (!found)
     {
-      noCapitals[key] = keyPhrasesJSON[key];
+      noCapitals[key] = json[key];
     }
   }
 
@@ -211,8 +241,9 @@ function fixPhrases(keyPhrasesJSON, limit = 20)
     return second[1] - first[1]; 
   });
 
-  // quedarse con los primeros limit valores de limit (20)
-  for (var i =  0; i < Math.max(limit, items.length); i++)
+  // quedarse con los primeros valores de limit (20)
+  var max = Math.max(limit, items.length);
+  for (var i =  0; i < max; i++)
   {
     fixed[items[i][0]] = items[i][1];
   }
