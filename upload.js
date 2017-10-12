@@ -242,7 +242,7 @@ function fixPhrases(json, limit = 20)
   });
 
   // quedarse con los primeros valores de limit (20)
-  var max = Math.max(limit, items.length);
+  var max = Math.min(limit, items.length);
   for (var i =  0; i < max; i++)
   {
     fixed[items[i][0]] = items[i][1];
