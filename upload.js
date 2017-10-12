@@ -20,15 +20,24 @@ $('.upload-btn').on('click', function (){
     $('.progress-bar').width('0%');
 });
 
+var files;
+var nFiles = 0;
+var indexfile;
+var SDK_;
+var recognizerConfig;
+var authentication;
+
 $('#upload-input').on('change', function(){
 
-  var files = $(this).get(0).files;
-
+  files = $(this).get(0).files;
   nFiles = files.length;
+  indexfile = 0;
+
   if (files.length > 0){
     
     require(["Speech.Browser.Sdk"], function(SDK) {
-      var recognizerConfig = new SDK.RecognizerConfig(
+      SDK_ = SDK;
+      recognizerConfig = new SDK.RecognizerConfig(
         new SDK.SpeechConfig(
             new SDK.Context(
               new SDK.OS(navigator.userAgent, "Browser", null),
@@ -37,61 +46,36 @@ $('#upload-input').on('change', function(){
         "es-ES",
         SDK.SpeechResultFormat["Simple"]); // Detailed
       
-      var authentication = new SDK.CognitiveSubscriptionKeyAuthentication(SpeechToTextKey);
-      
-      for (var i = 0; i < nFiles; i++) {
-        var file = files[i];
-        recognizer = SDK.CreateRecognizerWithFileAudioSource(recognizerConfig, authentication, file);
-        RecognizerStart(SDK, recognizer, file.name, i); 
-      }
+      authentication = new SDK.CognitiveSubscriptionKeyAuthentication(SpeechToTextKey);
+
+      recognizer = SDK.CreateRecognizerWithFileAudioSource(recognizerConfig, authentication, files[indexfile]);
+      RecognizerStart(recognizer);
     });
   }
 });
 
-var frags = 0;
-var documents = { documents: [] };
+function RecognizerStart(recognizer) {
+  
+  var fileName = files[indexfile].name;
+  var documents = { documents: [] };
+  var idDocument = 0;
+  var document;
 
-function RecognizerStart(SDK, recognizer, fileName, index) {
   recognizer.Recognize((event) => {
     
     if (event.Name == "SpeechSimplePhraseEvent")
     {
-      console.log(event.Result.DisplayText);
+      idDocument += 1;
+      console.log("SpeechSimplePhraseEvent-" + fileName + "(" + idDocument + "): " + event.Result.DisplayText);
      
-      frags += 1;
-      if(frags < 10)
-      {
-        var document = { id: frags, language: lang, text: event.Result.DisplayText};
-        documents.documents.push(document);
-      }
-      else
-      {
-        GetScore(documents, fileName);
-        GetKeyPhrases(documents);
-
-        frags = 0;
-        documents = { documents: [] };
-      }
+      document = { id: idDocument, language: lang, text: event.Result.DisplayText};
+      documents.documents.push(document);
     }
     else if (event.Name == "RecognitionEndedEvent")
     {
-      if(documents.documents.length > 0)
-      {
-        GetScore(documents, fileName);
-        GetKeyPhrases(documents);
+      console.log("RecognitionEndedEvent " + fileName);
 
-        frags = 0;
-        documents = { documents: [] };
-      }
-
-      if (index == nFiles - 1)
-      {
-        console.log("============= opinionsJSON =============");
-        console.log(JSON.stringify(opinionsJSON));
-
-        console.log("============ keyPhrasesJSON ============");
-        console.log(JSON.stringify(fixPhrases(keyPhrasesJSON)));
-      }
+      GetScore(documents, fileName);
     }
   })
   .On(
@@ -137,10 +121,12 @@ function GetScore(documents, fileName)
         }
       }
     }
+
+    GetKeyPhrases(documents, fileName);
   });
 }
 
-function GetKeyPhrases(documents)
+function GetKeyPhrases(documents, fileName)
 {
   var settings = {
     "async": true,
@@ -155,7 +141,8 @@ function GetKeyPhrases(documents)
     "data": JSON.stringify(documents)
   }
 
-  $.ajax(settings).done(function (response) {
+  $.ajax(settings).done(function (response) 
+  {
     if (response.documents)
     {
       var keyPhrases;
@@ -169,6 +156,7 @@ function GetKeyPhrases(documents)
           for (var j = 0; j < keyPhrases.length; j++)
           {
             key = keyPhrases[j];
+
             if (keyPhrasesJSON[key])
             {
               keyPhrasesJSON[key] = keyPhrasesJSON[key] + 1;
@@ -181,7 +169,35 @@ function GetKeyPhrases(documents)
         }
       }
     }
+
+    AnalysisNewFile();    
   });
+}
+
+function AnalysisNewFile()
+{
+  indexfile++;
+  if (indexfile < files.length)
+  {
+    recognizer = SDK_.CreateRecognizerWithFileAudioSource(recognizerConfig, authentication, files[indexfile]);
+    RecognizerStart(recognizer);
+  }
+  else if (indexfile == files.length)
+  {
+    printFinalResult();
+    
+    opinionsJSON = {};
+    keyPhrasesJSON = {};
+  } 
+}
+
+function printFinalResult()
+{
+  console.log("============= opinionsJSON =============");
+  console.log(JSON.stringify(opinionsJSON));
+
+  console.log("============ keyPhrasesJSON ============");
+  console.log(JSON.stringify(fixPhrases(keyPhrasesJSON)));
 }
 
 function fixPhrases(json, limit = 20)
