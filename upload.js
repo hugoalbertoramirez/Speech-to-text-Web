@@ -1,5 +1,7 @@
 var SpeechToTextKey = "9fc280924bed46b9ab0c3714ca3069ca";
 var TextAnalysisKey = "9c0bc0190edf451fa24029d7c2419210";
+var urlkeyPhrases = "https://westcentralus.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases";
+var urlSentiment = "https://westcentralus.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment";
 var lang = "es";
 
 var nFiles = 0;
@@ -17,6 +19,7 @@ $('.upload-btn').on('click', function (){
     $('.progress-bar').text('0%');
     $('.progress-bar').width('0%');
 });
+
 $('#upload-input').on('change', function(){
 
   var files = $(this).get(0).files;
@@ -31,7 +34,7 @@ $('#upload-input').on('change', function(){
               new SDK.OS(navigator.userAgent, "Browser", null),
               new SDK.Device("SpeechSample", "SpeechSample", "1.0.00000"))),
         SDK.RecognitionMode.Conversation,
-        "es-ES", 
+        "es-ES",
         SDK.SpeechResultFormat["Simple"]); // Detailed
       
       var authentication = new SDK.CognitiveSubscriptionKeyAuthentication(SpeechToTextKey);
@@ -69,7 +72,7 @@ function RecognizerStart(SDK, recognizer, fileName, index) {
         frags = 0;
         documents = { documents: [] };
       }
-    }   
+    }
     else if (event.Name == "RecognitionEndedEvent")
     {
       if(documents.documents.length > 0)
@@ -86,7 +89,7 @@ function RecognizerStart(SDK, recognizer, fileName, index) {
         console.log("============= opinionsJSON =============");
         console.log(JSON.stringify(opinionsJSON));
 
-        console.log("============= keyPhrasesJSON =============");
+        console.log("============ keyPhrasesJSON ============");
         console.log(JSON.stringify(fixPhrases(keyPhrasesJSON)));
       }
     }
@@ -102,7 +105,7 @@ function GetScore(documents, fileName)
   var settings = {
     "async": true,
     "crossDomain": true,
-    "url": "https://westcentralus.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment",
+    "url": urlSentiment,
     "method": "POST",
     "headers": {
       "ocp-apim-subscription-key": TextAnalysisKey,
@@ -142,7 +145,7 @@ function GetKeyPhrases(documents)
   var settings = {
     "async": true,
     "crossDomain": true,
-    "url": "https://westcentralus.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases",
+    "url": urlkeyPhrases,
     "method": "POST",
     "headers": {
       "ocp-apim-subscription-key": TextAnalysisKey,
