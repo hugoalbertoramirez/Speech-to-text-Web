@@ -1,5 +1,5 @@
 var SpeechToTextKey = "9fc280924bed46b9ab0c3714ca3069ca";
-var TextAnalysisKey = "9c0bc0190edf451fa24029d7c2419210";
+var TextAnalysisKey = "0c140e28fe754315b816691babf92e4e";
 var urlkeyPhrases = "https://westcentralus.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases";
 var urlSentiment = "https://westcentralus.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment";
 var lang = "es";
@@ -188,7 +188,7 @@ function AnalysisNewFile()
     
     opinionsJSON = {};
     keyPhrasesJSON = {};
-  } 
+  }
 }
 
 function printFinalResult()
