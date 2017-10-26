@@ -1,4 +1,4 @@
-var SpeechToTextKey = "9fc280924bed46b9ab0c3714ca3069ca";
+var SpeechToTextKey = "8e60a0fb81a047298615383a2c8dfa64"; // 30 días apartir del 25/10/2017
 var TextAnalysisKey = "0c140e28fe754315b816691babf92e4e";
 var urlkeyPhrases = "https://westcentralus.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases";
 var urlSentiment = "https://westcentralus.api.cognitive.microsoft.com/text/analytics/v2.0/sentiment";
@@ -27,12 +27,13 @@ var SDK_;
 var recognizerConfig;
 var authentication;
 
-$('#upload-input').on('change', function(){
-
+$('#upload-input').on('change', function()
+{
   files = $(this).get(0).files;
   nFiles = files.length;
   indexfile = 0;
 
+  console.log("files.length > 0 " + (files.length > 0));
   if (files.length > 0){
     
     require(["Speech.Browser.Sdk"], function(SDK) {
